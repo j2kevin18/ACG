@@ -1,5 +1,5 @@
 train_cfg:
-  root: "path/to/data"
+  root: "./FF++"
   split: "train"
   method: "all"
   compression: "c40"
@@ -19,7 +19,7 @@ train_cfg:
         mean: [0.5, 0.5, 0.5]
         std: [0.5, 0.5, 0.5]
 test_cfg:
-  root: "path/to/data"
+  root: "./FF++"
   split: "test"
   method: "all"
   compression: "c40"

@@ -1,7 +1,7 @@
 ## Configuration Files
 
 #### Model  Configuration
-- We use a yaml file to specify the hyperparameters of a model. All the training logs will be placed in `${project_root}/runs/${model_name}/${experiment_id}`. An example are shown below.
+- We use a yml file to specify the hyperparameters of a model. All the training logs will be placed in `${project_root}/runs/${model_name}/${experiment_id}`. An example are shown below.
 
 ```yaml
 model:

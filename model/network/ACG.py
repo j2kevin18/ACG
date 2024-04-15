@@ -1,7 +1,6 @@
 from functools import partial
 from timm.models import xception
 from model.common import SeparableConv2d, Block
-from model.common import GuidedAttention, GraphReasoning
 from model.OT import OTBlock
 
 import torch
