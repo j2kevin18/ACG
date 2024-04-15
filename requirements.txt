@@ -44,12 +44,10 @@ termcolor==1.1.0
 threadpoolctl==3.1.0
 tifffile==2022.4.8
 timm==0.5.4
-torch==1.11.0+cu113
-torchaudio==0.11.0+cu113
-torchvision==0.12.0+cu113
 tqdm==4.64.0
 typing_extensions==4.1.1
 urllib3==1.26.9
 Werkzeug==2.1.1
 yacs==0.1.8
 zipp==3.8.0
+retinaface_pytorch

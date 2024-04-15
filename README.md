@@ -22,7 +22,7 @@ Please ensure that you have already installed the following packages.
 
 ### Dataset Preparation
 - I include the dataset loaders for several commonly-used face forgery datasets, *i.e.,* [FaceForensics++](https://github.com/ondyari/FaceForensics), [Celeb-DF](https://www.cs.albany.edu/~lsw/celeb-deepfakeforensics.html), [WildDeepfake](https://github.com/deepfakeinthewild/deepfake-in-the-wild), and [DFDC](https://ai.facebook.com/datasets/dfdc). You can enter the dataset website to download the original data.
-- For FaceForensics++, Celeb-DF, and DFDC, since the original data are in video format, you should first extract the facial images from the sequences and store them. We use [RetinaFace](https://github.com/biubug6/Pytorch_Retinaface) to do this.
+- For FaceForensics++, Celeb-DF, and DFDC, since the original data are in video format, you should first extract the facial images from the sequences and store them. We use [RetinaFace](https://pypi.org/project/retinaface-pytorch/) to do this.
 
 ### Config Files
 - We have already provided the config templates in `config/`. You can adjust the parameters in the yaml files to specify a training process. More information is presented in [config/README.md](./config/README.md).

@@ -79,9 +79,10 @@ def solve(process_id, video_list, samples):
     check = 1
     start_time = time()
     for i, line in enumerate(video_list):
-        video_path = os.path.join(args.root_dir, line[0])
+        video_path = os.path.join(args.root_dir, line[1])
+        # print(video_path, i, line)
         save_path_pattern = os.path.join(
-            args.save_dir, line[0][: line[0].find('.')] + '_%03d.jpg'
+            args.save_dir, line[1][: line[1].find('.')] + '_%03d.jpg'
         )
         video2img(video_path, save_path_pattern, samples)
         for j in range(samples):
