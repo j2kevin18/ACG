@@ -26,15 +26,11 @@ class ACG(nn.Module):
         self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.dropout = nn.Dropout(drop_rate)
         self.fc = nn.Linear(encoder_params[self.name]["features"], num_classes)
-        self.encoder_ae1 = Block(728, 364, 3, 1)
-        self.encoder_ae2 = Block(364, 182, 3, 1)
-        self.encoder_ae3 = Block(182, 64, 3, 1)
-        self.encoder_ae4 = Block(64, 32, 3, 1)
+        self.encoder_ae1 = Block(728, 182, 3, 1)
+        self.encoder_ae2 = Block(182, 32, 3, 1)
         self.ot = OTBlock()
-        self.decoder_ae1 = Block(32, 64, 3, 1)
-        self.decoder_ae2 = Block(64, 182, 3, 1)
-        self.decoder_ae3 = Block(182, 364, 3, 1)
-        self.decoder_ae4 = Block(364, 728, 3, 1)
+        self.decoder_ae1 = Block(32, 182, 3, 1)
+        self.decoder_ae2 = Block(182, 728, 3, 1)
 
 
         self.decoder1 = nn.Sequential(
@@ -92,8 +88,6 @@ class ACG(nn.Module):
         out = self.encoder.block4(out)
         embedding = self.encoder_ae1(out)
         embedding = self.encoder_ae2(embedding)
-        embedding = self.encoder_ae3(embedding)
-        embedding = self.encoder_ae4(embedding)
         embedding = self.ot(embedding)
         
         embedding = self.decoder_ae1(embedding)
@@ -101,14 +95,6 @@ class ACG(nn.Module):
         self.loss_inputs['contra'].append(corr)
         
         embedding = self.decoder_ae2(embedding)
-        norm_embed, corr = self.norm_n_corr(embedding)
-        self.loss_inputs['contra'].append(corr)
-        
-        embedding = self.decoder_ae3(embedding)
-        norm_embed, corr = self.norm_n_corr(embedding)
-        self.loss_inputs['contra'].append(corr)
-        
-        embedding = self.decoder_ae4(embedding)
         norm_embed, corr = self.norm_n_corr(embedding)
         self.loss_inputs['contra'].append(corr)
 
