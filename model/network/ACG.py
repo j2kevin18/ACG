@@ -1,6 +1,6 @@
 from functools import partial
 from timm.models import xception
-from model.common import SeparableConv2d, Block
+from model.common import SeparableConv2d, Block, AE
 from model.OT import OTBlock
 
 import torch
@@ -26,7 +26,15 @@ class ACG(nn.Module):
         self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.dropout = nn.Dropout(drop_rate)
         self.fc = nn.Linear(encoder_params[self.name]["features"], num_classes)
+        self.encoder_ae1 = Block(728, 364, 3, 1)
+        self.encoder_ae2 = Block(364, 182, 3, 1)
+        self.encoder_ae3 = Block(182, 64, 3, 1)
+        self.encoder_ae4 = Block(64, 32, 3, 1)
         self.ot = OTBlock()
+        self.decoder_ae1 = Block(32, 64, 3, 1)
+        self.decoder_ae2 = Block(64, 182, 3, 1)
+        self.decoder_ae3 = Block(182, 364, 3, 1)
+        self.decoder_ae4 = Block(364, 728, 3, 1)
 
 
         self.decoder1 = nn.Sequential(
@@ -81,10 +89,26 @@ class ACG(nn.Module):
         out = self.encoder.block1(out)
         out = self.encoder.block2(out)
         out = self.encoder.block3(out)
-        embedding = self.encoder.block4(out)
+        out = self.encoder.block4(out)
+        embedding = self.encoder_ae1(out)
+        embedding = self.encoder_ae2(embedding)
+        embedding = self.encoder_ae3(embedding)
+        embedding = self.encoder_ae4(embedding)
         embedding = self.ot(embedding)
         
-
+        embedding = self.decoder_ae1(embedding)
+        norm_embed, corr = self.norm_n_corr(embedding)
+        self.loss_inputs['contra'].append(corr)
+        
+        embedding = self.decoder_ae2(embedding)
+        norm_embed, corr = self.norm_n_corr(embedding)
+        self.loss_inputs['contra'].append(corr)
+        
+        embedding = self.decoder_ae3(embedding)
+        norm_embed, corr = self.norm_n_corr(embedding)
+        self.loss_inputs['contra'].append(corr)
+        
+        embedding = self.decoder_ae4(embedding)
         norm_embed, corr = self.norm_n_corr(embedding)
         self.loss_inputs['contra'].append(corr)
 
@@ -97,6 +121,7 @@ class ACG(nn.Module):
 
         out = self.decoder3(out_d2)
         out_d4 = self.decoder4(out)
+        
 
         norm_embed, corr = self.norm_n_corr(out_d4)
         self.loss_inputs['contra'].append(corr)
