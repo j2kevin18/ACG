@@ -16,7 +16,7 @@ config:
     gamma: 0.5
   resume: False
   resume_best: False
-  id: FF++c40
+  id: Celeb-DF
   loss: binary_ce
   metric: Acc
   debug: False
@@ -26,8 +26,8 @@ data:
   train_batch_size: 32
   val_batch_size: 64
   test_batch_size: 64
-  name: FaceForensics
-  file: "./config/dataset/faceforensics.yml"
+  name: CelebDF
+  file: "./config/dataset/celeb_df.yml"
   train_branch: "train_cfg"
   val_branch: "test_cfg"
   test_branch: "test_cfg"

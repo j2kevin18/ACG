@@ -61,14 +61,20 @@ class CelebDF(AbstractDataset):
         real = list()
         fake = list()
         # YouTube-real
-        for _ in ids[0]:
-            real.extend(glob(join(self.root, 'YouTube-real', 'images', _, '*.png')))
+        # for _ in ids[0]:
+        #     real.extend(glob(join(self.root, 'YouTube-real', 'images', _, '*.png')))
+        # # Celeb-real
+        # for _ in ids[1]:
+        #     real.extend(glob(join(self.root, 'Celeb-real', 'images', _, '*.png')))
+        # # Celeb-synthesis
+        # for _ in ids[2]:
+        #     fake.extend(glob(join(self.root, 'Celeb-synthesis', 'images', _, '*.png')))
+        # YouTube-real
+        real.extend(glob(join(self.root, 'YouTube-real',  '*.jpg')))
         # Celeb-real
-        for _ in ids[1]:
-            real.extend(glob(join(self.root, 'Celeb-real', 'images', _, '*.png')))
+        real.extend(glob(join(self.root, 'Celeb-real',  '*.jpg')))
         # Celeb-synthesis
-        for _ in ids[2]:
-            fake.extend(glob(join(self.root, 'Celeb-synthesis', 'images', _, '*.png')))
+        fake.extend(glob(join(self.root, 'Celeb-synthesis',  '*.jpg')))
         print(f"Real: {len(real)}, Fake: {len(fake)}")
         if balance:
             fake = np.random.choice(fake, size=len(real), replace=False)

@@ -12,7 +12,7 @@ from retinaface.pre_trained_models import get_model
 parser = argparse.ArgumentParser('script', add_help=False)
 parser.add_argument('--root_dir', type=str)
 parser.add_argument('--save_dir', type=str)
-parser.add_argument('--process', default=8, type=int)
+parser.add_argument('--process', default=1, type=int)
 args = parser.parse_args()
 
 
@@ -74,7 +74,8 @@ def can_seg(img_path, save_path, model=None, scale=1.3):
 
 
 def solve(process_id, raw_list):
-    device = 'cuda:%d' % process_id
+    # device = 'cuda:%d' % process_id
+    device = 'cpu'
     model = get_model("resnet50_2020-07-20", max_size=1024, device=device)
     model.eval()
     new_list = []

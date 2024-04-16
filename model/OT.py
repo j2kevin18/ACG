@@ -26,7 +26,7 @@ class pyOMT_raw():
     Adam gradient descent method is used here to perform the optimization, and Monte-Carlo integration method is used to calculate the energy.
     '''
 
-    def __init__ (self, h_P, num_P, dim, max_iter, lr, bat_size_P, bat_size_n):
+    def __init__ (self, h_P, num_P, dim, max_iter, lr, bat_size_P, bat_size_n, result_root_path):
         '''Parameters to compute semi-discrete Optimal Transport (OT)
         Args:
             h_P: Host vector (i.e. CPU vector) storing locations of target points with float type and of shape (num_P, dim).
@@ -44,6 +44,7 @@ class pyOMT_raw():
         self.lr = lr
         self.bat_size_P = bat_size_P
         self.bat_size_n = bat_size_n
+        self.result_root_path = result_root_path
 
         if num_P % bat_size_P != 0:
             sys.exit('Error: (num_P) is not a multiple of (bat_size_P)')
@@ -174,12 +175,12 @@ class pyOMT_raw():
                 return
 
 
-            torch.save(self.d_h, './h/{}.pt'.format(steps+last_step))
-            torch.save(self.d_adam_m, './adam_m/{}.pt'.format(steps+last_step))
-            torch.save(self.d_adam_v, './adam_v/{}.pt'.format(steps+last_step))
-            h_file_list.append('./h/{}.pt'.format(steps+last_step))
-            m_file_list.append('./adam_m/{}.pt'.format(steps+last_step))
-            v_file_list.append('./adam_v/{}.pt'.format(steps+last_step))
+            torch.save(self.d_h, self.result_root_path+'/h/{}.pt'.format(steps+last_step))
+            torch.save(self.d_adam_m, self.result_root_path+'/adam_m/{}.pt'.format(steps+last_step))
+            torch.save(self.d_adam_v, self.result_root_path+'/adam_v/{}.pt'.format(steps+last_step))
+            h_file_list.append(self.result_root_path+'/h/{}.pt'.format(steps+last_step))
+            m_file_list.append(self.result_root_path+'/adam_m/{}.pt'.format(steps+last_step))
+            v_file_list.append(self.result_root_path+'/adam_v/{}.pt'.format(steps+last_step))
             if len(h_file_list)>5:
                 if os.path.exists(h_file_list[0]):
                     os.remove(h_file_list[0])
@@ -217,9 +218,9 @@ class pyOMT_raw():
     def train_omt(self, num_bat=1):
         last_step = 0
         '''load last trained model parameters and last omt parameters'''
-        h_id, h_file = load_last_file('./h', '.pt')
-        adam_m_id, m_file = load_last_file('./adam_m', '.pt')
-        adam_v_id, v_file = load_last_file('./adam_v', '.pt')
+        h_id, h_file = load_last_file(self.result_root_path+'/h', '.pt')
+        adam_m_id, m_file = load_last_file(self.result_root_path+'/adam_m', '.pt')
+        adam_v_id, v_file = load_last_file(self.result_root_path+'/adam_v', '.pt')
         if h_id != None:
             if h_id != adam_m_id or h_id!= adam_v_id:
                 sys.exit('Error: h, adam_m, adam_v file log does not match')
@@ -314,6 +315,7 @@ class OTBlock(nn.Module):
         self.rec_gen_distance = rec_gen_distance #dis-similarity between reconstructed samples and generated samples, ranging from [0,1] with smaller meaning more similar
         
         '''args for save'''
+        self.result_root_path = result_root_path
         self.selected_ot_model_path = os.path.join(result_root_path, 'h.pt')
         self.feature_save_path = os.path.join(result_root_path, 'features.pt') 
         self.gen_feature_path = os.path.join(result_root_path, 'output_P_gen.mat')
@@ -342,10 +344,11 @@ class OTBlock(nn.Module):
         h_P = h_P[0:num_P//bat_size_P*bat_size_P,:]
         num_P = h_P.shape[0]
 
-        p_s = pyOMT_raw(h_P, num_P, dim_y, self.max_iter, self.ot_lr, bat_size_P, self.bat_size_n)
+        p_s = pyOMT_raw(h_P=h_P, num_P=num_P, dim=dim_y, max_iter=self.max_iter, lr=self.ot_lr, 
+                        bat_size_P=bat_size_P, bat_size_n=self.bat_size_n, result_root_path=self.result_root_path)
         '''train omt'''
         if TRAIN:
-            p_s.train_omt(p_s, self.init_num_bat_n)
+            p_s.train_omt(self.init_num_bat_n)
             torch.save(p_s.d_h, output_h)
         else:
             p_s.set_h(torch.load(output_h))
@@ -366,9 +369,9 @@ class OTBlock(nn.Module):
         #generate feature via OT
         ot_model_load_path = self.selected_ot_model_path
         if not os.path.exists(self.selected_ot_model_path):
-            for file in os.listdir('.h/'):
+            for file in os.listdir(self.result_root_path+'/h/'):
                 if fnmatch.fnmatch(file, '*.pt'):
-                    ot_model_load_path = os.path.join('.h/',file)
+                    ot_model_load_path = os.path.join(self.result_root_path+'/h/',file)
                     print('Successfully loaded OT model ' + ot_model_load_path)
 
         print('Generating features with OT solver...')

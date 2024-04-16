@@ -1,5 +1,5 @@
 train_cfg:
-  root: "path/to/data"
+  root: "Celeb-DF-v2-imgface"
   split: "train"
   balance: True
   log_steps: 1000
@@ -18,7 +18,7 @@ train_cfg:
         mean: [0.5, 0.5, 0.5]
         std: [0.5, 0.5, 0.5]
 test_cfg:
-  root: "path/to/data"
+  root: "Celeb-DF-v2-imgface"
   split: "test"
   balance: False
   transforms:
