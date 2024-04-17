@@ -2,12 +2,13 @@ import shutil
 import sys
 import os
 import fnmatch
-import torch
+import torch, gc
 import torch.nn as nn
 import scipy.io as sio
 import numpy as np
 import matplotlib.pyplot as plt
 import pdb
+
 
 # 设置模型运行的设备
 cuda = torch.cuda.is_available()
@@ -99,6 +100,7 @@ class pyOMT_raw():
             temp_P = temp_P.view(temp_P.shape[0], -1)	
                 
             '''U=PX+H'''
+            # print(self.d_temp_P.shape, temp_P.shape)
             self.d_temp_h = self.d_h[i*self.bat_size_P:(i+1)*self.bat_size_P]
             self.d_temp_P.copy_(temp_P)
             torch.mm(self.d_temp_P, self.d_volP.t(),out=self.d_U)
@@ -167,8 +169,8 @@ class pyOMT_raw():
             torch.abs(self.d_g, out=self.d_g)
             g_ratio = torch.max(self.d_g)*self.num_P
             
-            # print('[{0}/{1}] Max absolute error ratio: {2:.3f}. g norm: {3:.6f}. num zero: {4:d}'.format(
-            #     steps, self.max_iter, g_ratio, g_norm, num_zero))
+            print('[{0}/{1}] Max absolute error ratio: {2:.3f}. g norm: {3:.6f}. num zero: {4:d}'.format(
+                steps, self.max_iter, g_ratio, g_norm, num_zero))
 
             if g_norm < 2e-3:
                 # torch.save(self.d_h, './h_final.pt')
@@ -237,7 +239,7 @@ class pyOMT_raw():
         # np.savetxt('./h_final.csv',p_s.d_h.cpu().numpy(), delimiter=',')
         
     def gen_P(self, numX, output_P_gen, thresh=-1, topk=5, dissim=0.75, max_gen_samples=None):
-        I_all = -torch.ones([topk, numX], dtype=torch.long)
+        I_all = -torch.ones([topk, numX], dtype=torch.long).to(device)
         num_bat_x = numX//self.bat_size_n
         bat_size_x = min(numX, self.bat_size_n)
         for ii in range(max(num_bat_x, 1)):
@@ -246,7 +248,7 @@ class pyOMT_raw():
             _, I = torch.topk(self.d_U, topk, dim=0)
             for k in range(topk):
                 I_all[k, ii*bat_size_x:(ii+1)*bat_size_x].copy_(I[k, 0:bat_size_x])
-        I_all_2 = -torch.ones([2, (topk-1) * numX], dtype=torch.long)
+        I_all_2 = -torch.ones([2, (topk-1) * numX], dtype=torch.long).to(device)
         for ii in range(topk-1):
             I_all_2[0, ii * numX:(ii+1) * numX] = I_all[0,:]
             I_all_2[1, ii * numX:(ii+1) * numX] = I_all[ii + 1, :]
@@ -259,10 +261,10 @@ class pyOMT_raw():
 
         '''compute angles'''
         P = self.h_P      
-        nm = torch.cat([P, -torch.ones(self.num_P,1)], dim=1)
+        nm = torch.cat([P, torch.ones(self.num_P,1).to(device)], dim=1)
         nm /= torch.norm(nm,dim=1).view(-1,1)
         cs = torch.sum(nm[I_all[0,:],:] * nm[I_all[1,:],:], 1) #element-wise multiplication
-        cs = torch.min(torch.ones([cs.shape[0]]), cs)
+        cs = torch.min(torch.ones([cs.shape[0]]).to(device), cs)
         theta = torch.acos(cs)
         # pdb.set_trace()
 
@@ -271,7 +273,7 @@ class pyOMT_raw():
         I_gen = I_all[:, theta <= thresh]
         I_gen, _ = torch.sort(I_gen, dim=0)
         # _, uni_gen_id = np.unique(I_gen.numpy(), return_index=True, axis=1)
-        _, uni_gen_id = np.unique(I_gen[0,:].numpy(), return_index=True)
+        _, uni_gen_id = np.unique(I_gen[0,:].cpu().numpy(), return_index=True)
         np.random.shuffle(uni_gen_id)
         I_gen = I_gen[:, torch.from_numpy(uni_gen_id)]
         # pdb.set_trace()
@@ -285,13 +287,14 @@ class pyOMT_raw():
         
         '''generate new features'''
         # rand_w = torch.rand([numGen,1])    
-        rand_w = dissim * torch.ones([numGen,1])
-        P_gen = (torch.mul(P[I_gen[0,:],:], 1 - rand_w) + torch.mul(P[I_gen[1,:],:], rand_w)).numpy()
+        rand_w = dissim * torch.ones([numGen,1]).to(device)
+        P_gen = (torch.mul(P[I_gen[0,:],:], 1 - rand_w) + torch.mul(P[I_gen[1,:],:], rand_w)).cpu().numpy()
 
-        P_gen2 = P[I_gen[0,:],:]
+        P_gen2 = P[I_gen[0,:],:].cpu().numpy()
         P_gen = np.concatenate((P_gen,P_gen2))
 
-        id_gen = I_gen[0,:].squeeze().numpy().astype(int)
+        id_gen = I_gen[0,:].squeeze().cpu().numpy().astype(int)
+        print("P_gen:{}", P_gen.shape)
 
         sio.savemat(output_P_gen, {'features':P_gen, 'ids':id_gen})
         
@@ -299,7 +302,7 @@ class pyOMT_raw():
     
         
 class OTBlock(nn.Module):
-    def __init__(self, result_root_path="./result", max_gen_samples=50000,
+    def __init__(self, result_root_path="./ot_result", max_gen_samples=50000,
                  max_iter=20000, ot_lr=5e-2, bat_size_n=1000, init_num_bat_n=20, num_gen_x=20000, topk=20, 
                  angle_threshold=0.7, rec_gen_distance=0.75):
         super().__init__()
@@ -333,6 +336,7 @@ class OTBlock(nn.Module):
             assert(True, 'unrecogonized OT computation action: ' + mode)
             
         h_P = torch.load(input_P)
+        h_P = h_P.view(h_P.shape[0], -1)	
         num_P = h_P.shape[0]
         dim_y = h_P.shape[1]
         bat_size_P = num_P
@@ -343,6 +347,7 @@ class OTBlock(nn.Module):
         #crop h_P to fit bat_size_P
         h_P = h_P[0:num_P//bat_size_P*bat_size_P,:]
         num_P = h_P.shape[0]
+
 
         p_s = pyOMT_raw(h_P=h_P, num_P=num_P, dim=dim_y, max_iter=self.max_iter, lr=self.ot_lr, 
                         bat_size_P=bat_size_P, bat_size_n=self.bat_size_n, result_root_path=self.result_root_path)
@@ -355,11 +360,12 @@ class OTBlock(nn.Module):
 
         if GENERATE:
             '''generate new samples'''
-            p_s.gen_P(p_s, self.num_gen_x, output_P_gen, thresh=self.angle_threshold, topk=self.topk, dissim=self.rec_gen_distance, max_gen_samples=max_gen_samples)
+            p_s.gen_P(self.num_gen_x, output_P_gen, thresh=self.angle_threshold, topk=self.topk, dissim=self.rec_gen_distance, max_gen_samples=max_gen_samples)
             
         
     def process_feature(self, z):
         #extract feature
+        feature_shape = z.shape
         features = z.squeeze().detach()
         torch.save(features, self.feature_save_path)
         
@@ -382,9 +388,8 @@ class OTBlock(nn.Module):
         feature_dict = sio.loadmat(self.gen_feature_path)
         features = feature_dict['features']
             
-        num_feature = features.shape[0]
-        z = torch.Tensor(torch.from_numpy(features), device=device)
-        z = z.view(num_feature,-1,1,1)
+        z = torch.from_numpy(features).to(device)
+        z = z.view(feature_shape)
         
         return z
 
