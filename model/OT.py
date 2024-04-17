@@ -294,7 +294,7 @@ class pyOMT_raw():
         P_gen = np.concatenate((P_gen,P_gen2))
 
         id_gen = I_gen[0,:].squeeze().cpu().numpy().astype(int)
-        print("P_gen:{}", P_gen.shape)
+        # print(f"P_gen:{P_gen.shape}, I_gen:{I_gen.shape}, P:{P.shape}, theta:{theta}")
 
         sio.savemat(output_P_gen, {'features':P_gen, 'ids':id_gen})
         
@@ -303,13 +303,11 @@ class pyOMT_raw():
         
 class OTBlock(nn.Module):
     def __init__(self, result_root_path="./ot_result", max_gen_samples=50000,
-                 max_iter=20000, ot_lr=5e-2, bat_size_n=1000, init_num_bat_n=20, num_gen_x=20000, topk=20, 
-                 angle_threshold=0.7, rec_gen_distance=0.75):
+                 max_iter=20000, ot_lr=5e-2, num_gen_x=20000, topk=20, 
+                 angle_threshold=1.4, rec_gen_distance=0.75):
         super().__init__()
         self.max_iter = max_iter
         self.ot_lr = ot_lr
-        self.bat_size_n = bat_size_n
-        self.init_num_bat_n = init_num_bat_n
         '''args for generation'''
         self.topk = topk
         self.num_gen_x = num_gen_x #a multiple of bat_size_n
@@ -350,10 +348,10 @@ class OTBlock(nn.Module):
 
 
         p_s = pyOMT_raw(h_P=h_P, num_P=num_P, dim=dim_y, max_iter=self.max_iter, lr=self.ot_lr, 
-                        bat_size_P=bat_size_P, bat_size_n=self.bat_size_n, result_root_path=self.result_root_path)
+                        bat_size_P=bat_size_P, bat_size_n=bat_size_P, result_root_path=self.result_root_path)
         '''train omt'''
         if TRAIN:
-            p_s.train_omt(self.init_num_bat_n)
+            p_s.train_omt(bat_size_P)
             torch.save(p_s.d_h, output_h)
         else:
             p_s.set_h(torch.load(output_h))
@@ -370,7 +368,8 @@ class OTBlock(nn.Module):
         torch.save(features, self.feature_save_path)
         
         #train OT
-        self.compute_ot(self.feature_save_path, self.selected_ot_model_path, self.gen_feature_path, mode='train',max_gen_samples=self.max_gen_samples)
+        if self.training:
+            self.compute_ot(self.feature_save_path, self.selected_ot_model_path, self.gen_feature_path, mode='train',max_gen_samples=self.max_gen_samples)
   
         #generate feature via OT
         ot_model_load_path = self.selected_ot_model_path
@@ -380,24 +379,25 @@ class OTBlock(nn.Module):
                     ot_model_load_path = os.path.join(self.result_root_path+'/h/',file)
                     print('Successfully loaded OT model ' + ot_model_load_path)
 
-        print('Generating features with OT solver...')
+        # print('Generating features with OT solver...')
         self.compute_ot(self.feature_save_path, self.selected_ot_model_path, self.gen_feature_path, mode='generate',max_gen_samples=self.max_gen_samples)
         if torch.cuda.is_available():
             torch.cuda.empty_cache() 
         
         feature_dict = sio.loadmat(self.gen_feature_path)
         features = feature_dict['features']
+        num_feature = features.shape[0]
             
         z = torch.from_numpy(features).to(device)
-        z = z.view(feature_shape)
+        z = z.view(num_feature, feature_shape[1], feature_shape[2], feature_shape[3])
         
         return z
 
             
     def forward(self, x):
-        z = self.process_feature(x)
-        z_ot = x + (z - x).detach()
-        return z_ot
+        z = self.process_feature(x)[:x.shape[0]]
+        z = x + (z - x).detach()
+        return z
 
         
       
