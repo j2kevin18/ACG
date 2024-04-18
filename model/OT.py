@@ -183,9 +183,9 @@ class pyOMT_raw():
             h_tmp[self.d_h.shape[0], :] = self.d_h
             m_tmp[self.d_adam_m.shape[0], :] = self.d_adam_m
             v_tmp[self.d_adam_v.shape[0], :] = self.d_adam_v
-            torch.save(self.d_h, self.result_root_path+'/h/{}.pt'.format(steps+last_step))
-            torch.save(self.d_adam_m, self.result_root_path+'/adam_m/{}.pt'.format(steps+last_step))
-            torch.save(self.d_adam_v, self.result_root_path+'/adam_v/{}.pt'.format(steps+last_step))
+            torch.save(h_tmp, self.result_root_path+'/h/{}.pt'.format(steps+last_step))
+            torch.save(m_tmp, self.result_root_path+'/adam_m/{}.pt'.format(steps+last_step))
+            torch.save(v_tmp, self.result_root_path+'/adam_v/{}.pt'.format(steps+last_step))
             h_file_list.append(self.result_root_path+'/h/{}.pt'.format(steps+last_step))
             m_file_list.append(self.result_root_path+'/adam_m/{}.pt'.format(steps+last_step))
             v_file_list.append(self.result_root_path+'/adam_v/{}.pt'.format(steps+last_step))
@@ -215,7 +215,7 @@ class pyOMT_raw():
 
 
     def set_h(self, h_tensor):
-            self.d_h[h_tensor.shape[0],:].copy_(h_tensor)
+        self.d_h[h_tensor.shape[0],:].copy_(h_tensor)
 
     def set_adam_m(self, adam_m_tensor):
         self.d_adam_m[adam_m_tensor.shape[0],:].copy_(adam_m_tensor)
@@ -298,14 +298,13 @@ class pyOMT_raw():
 
 
         if P_gen.shape[0] > 0:
-            P[I_gen[0,:],:] = P_gen
+            P.cpu().numpy()[I_gen[0,:],:] = P_gen
             
-        P_gen = P.cpu().numpy()
 
         id_gen = I_gen[0,:].squeeze().cpu().numpy().astype(int)
         # print(f"P_gen:{P_gen.shape}, I_gen:{I_gen.shape}, P:{P.shape}, theta:{theta}")
 
-        sio.savemat(output_P_gen, {'features':P_gen, 'ids':id_gen})
+        sio.savemat(output_P_gen, {'features':P, 'ids':id_gen})
         
 
     
@@ -327,6 +326,7 @@ class OTBlock(nn.Module):
         self.rec_gen_distance = rec_gen_distance #dis-similarity between reconstructed samples and generated samples, ranging from [0,1] with smaller meaning more similar
         
         '''args for save'''
+        os.makedirs(result_root_path, exist_ok=True)
         self.result_root_path = result_root_path
         self.selected_ot_model_path = os.path.join(result_root_path, 'h.pt')
         self.feature_save_path = os.path.join(result_root_path, 'features.pt') 
@@ -381,8 +381,8 @@ class OTBlock(nn.Module):
         torch.save(features, self.feature_save_path)
         
         #train OT
-        # if self.training:
-        #     self.compute_ot(self.feature_save_path, self.selected_ot_model_path, self.gen_feature_path, mode='train')
+        if self.training:
+            self.compute_ot(self.feature_save_path, self.selected_ot_model_path, self.gen_feature_path, mode='train')
   
         #generate feature via OT
         ot_model_load_path = self.selected_ot_model_path

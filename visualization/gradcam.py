@@ -8,8 +8,8 @@ import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 from torchvision.models.resnet import resnet18
-from PyDeepFakeDet import models
-from PyDeepFakeDet.utils.checkpoint import load_checkpoint
+from model import load_model
+from utils.checkpoint import load_checkpoint
 import argparse
 
 
@@ -135,7 +135,7 @@ if __name__== "__main__":
     parser.add_argument('--img', type=str)
     args = parser.parse_args()
     cfg = {"PRETRAINED": False, "ESCAPE": ""}
-    net = getattr(models, args.model)(cfg)
+    net = getattr(load_model(args.model))(cfg)
     state_dic = torch.load(args.pth)
     print("keys in your model:", state_dic["model_state"].keys())
     load_checkpoint(args.pth, net, False)
