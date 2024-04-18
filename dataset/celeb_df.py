@@ -33,9 +33,9 @@ class CelebDF(AbstractDataset):
         print(f"Dataset contains {len(self.images)} images.\n")
 
     def __get_images_ids(self):
-        youtube_real = listdir(join(self.root, 'YouTube-real', 'images'))
-        celeb_real = listdir(join(self.root, 'Celeb-real', 'images'))
-        celeb_fake = listdir(join(self.root, 'Celeb-synthesis', 'images'))
+        youtube_real = listdir(join(self.root, 'YouTube-real'))
+        celeb_real = listdir(join(self.root, 'Celeb-real'))
+        celeb_fake = listdir(join(self.root, 'Celeb-synthesis'))
         return set(youtube_real), set(celeb_real), set(celeb_fake)
 
     def __get_test_ids(self):

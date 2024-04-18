@@ -120,7 +120,7 @@ class ExpMultiGpuTrainer(AbstractTrainer):
         self.model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self.model).to(self.device)
         self._mprint(f"Using SyncBatchNorm.")
         self.model = torch.nn.parallel.DistributedDataParallel(
-            self.model, device_ids=[self.local_rank], find_unused_parameters=True)
+            self.model, device_ids=[self.local_rank], find_unused_parameters=False)
 
         # load optimizer
         optim_cfg = config_cfg.get("optimizer", None)

@@ -75,8 +75,8 @@ class pyOMT_raw():
         #!random number generator
         self.qrng = torch.quasirandom.SobolEngine(dimension=self.dim)
 
-        print('Allocated GPU memory: {}MB'.format(torch.cuda.memory_allocated()/1e6))
-        print('Cached memory: {}MB'.format(torch.cuda.memory_cached()/1e6))
+        # print('Allocated GPU memory: {}MB'.format(torch.cuda.memory_allocated()/1e6))
+        # print('Cached memory: {}MB'.format(torch.cuda.memory_cached()/1e6))
 
 
     def pre_cal(self,count):
@@ -176,7 +176,13 @@ class pyOMT_raw():
                 # torch.save(self.d_h, './h_final.pt')
                 return
 
-
+            h_id, h_file = load_last_file(self.result_root_path+'/h', '.pt')
+            adam_m_id, m_file = load_last_file(self.result_root_path+'/adam_m', '.pt')
+            adam_v_id, v_file = load_last_file(self.result_root_path+'/adam_v', '.pt')
+            h_tmp, m_tmp, v_tmp = torch.load(h_file), torch.load(m_file), torch.load(v_file)
+            h_tmp[self.d_h.shape[0], :] = self.d_h
+            m_tmp[self.d_adam_m.shape[0], :] = self.d_adam_m
+            v_tmp[self.d_adam_v.shape[0], :] = self.d_adam_v
             torch.save(self.d_h, self.result_root_path+'/h/{}.pt'.format(steps+last_step))
             torch.save(self.d_adam_m, self.result_root_path+'/adam_m/{}.pt'.format(steps+last_step))
             torch.save(self.d_adam_v, self.result_root_path+'/adam_v/{}.pt'.format(steps+last_step))
@@ -209,13 +215,13 @@ class pyOMT_raw():
 
 
     def set_h(self, h_tensor):
-        self.d_h.copy_(h_tensor)
+            self.d_h[h_tensor.shape[0],:].copy_(h_tensor)
 
     def set_adam_m(self, adam_m_tensor):
-        self.d_adam_m.copy_(adam_m_tensor)
+        self.d_adam_m[adam_m_tensor.shape[0],:].copy_(adam_m_tensor)
 
     def set_adam_v(self, adam_v_tensor):
-        self.d_adam_v.copy_(adam_v_tensor)
+        self.d_adam_v[adam_v_tensor.shape[0],:].copy_(adam_v_tensor)
         
     def train_omt(self, num_bat=1):
         last_step = 0
@@ -290,8 +296,11 @@ class pyOMT_raw():
         rand_w = dissim * torch.ones([numGen,1]).to(device)
         P_gen = (torch.mul(P[I_gen[0,:],:], 1 - rand_w) + torch.mul(P[I_gen[1,:],:], rand_w)).cpu().numpy()
 
-        P_gen2 = P[I_gen[0,:],:].cpu().numpy()
-        P_gen = np.concatenate((P_gen,P_gen2))
+
+        if P_gen.shape[0] > 0:
+            P[I_gen[0,:],:] = P_gen
+            
+        P_gen = P.cpu().numpy()
 
         id_gen = I_gen[0,:].squeeze().cpu().numpy().astype(int)
         # print(f"P_gen:{P_gen.shape}, I_gen:{I_gen.shape}, P:{P.shape}, theta:{theta}")
@@ -302,16 +311,18 @@ class pyOMT_raw():
     
         
 class OTBlock(nn.Module):
-    def __init__(self, result_root_path="./ot_result", max_gen_samples=50000,
-                 max_iter=20000, ot_lr=5e-2, num_gen_x=20000, topk=20, 
-                 angle_threshold=1.4, rec_gen_distance=0.75):
+    def __init__(self, result_root_path="./ot_result",
+                 max_iter=400, ot_lr=5e-2, topk=20, angle_threshold=0.7, rec_gen_distance=0.75,
+                 num_gen_x_bat=3,
+                #  max_gen_samples=32
+                 ):
         super().__init__()
         self.max_iter = max_iter
         self.ot_lr = ot_lr
         '''args for generation'''
         self.topk = topk
-        self.num_gen_x = num_gen_x #a multiple of bat_size_n
-        self.max_gen_samples = max_gen_samples #max number of generated samples. Used to avoid out of memory error.
+        self.num_gen_x_bat = num_gen_x_bat #a multiple num of bat_size_n
+        # self.max_gen_samples = max_gen_samples #max number of generated samples. Used to avoid out of memory error.
         self.angle_threshold = angle_threshold #angle threshold of OT generator ranging from [0,1]. See paper for details.
         self.rec_gen_distance = rec_gen_distance #dis-similarity between reconstructed samples and generated samples, ranging from [0,1] with smaller meaning more similar
         
@@ -322,7 +333,7 @@ class OTBlock(nn.Module):
         self.gen_feature_path = os.path.join(result_root_path, 'output_P_gen.mat')
 
         
-    def compute_ot(self, input_P, output_h, output_P_gen, mode='train', max_gen_samples=None):
+    def compute_ot(self, input_P, output_h, output_P_gen, mode='train'):
         '''args for omt'''
         TRAIN = False
         GENERATE = False
@@ -358,7 +369,9 @@ class OTBlock(nn.Module):
 
         if GENERATE:
             '''generate new samples'''
-            p_s.gen_P(self.num_gen_x, output_P_gen, thresh=self.angle_threshold, topk=self.topk, dissim=self.rec_gen_distance, max_gen_samples=max_gen_samples)
+            p_s.gen_P(self.num_gen_x_bat*bat_size_P, output_P_gen, thresh=self.angle_threshold, topk=self.topk, dissim=self.rec_gen_distance, max_gen_samples=bat_size_P)
+        
+        return True
             
         
     def process_feature(self, z):
@@ -368,8 +381,8 @@ class OTBlock(nn.Module):
         torch.save(features, self.feature_save_path)
         
         #train OT
-        if self.training:
-            self.compute_ot(self.feature_save_path, self.selected_ot_model_path, self.gen_feature_path, mode='train',max_gen_samples=self.max_gen_samples)
+        # if self.training:
+        #     self.compute_ot(self.feature_save_path, self.selected_ot_model_path, self.gen_feature_path, mode='train')
   
         #generate feature via OT
         ot_model_load_path = self.selected_ot_model_path
@@ -380,7 +393,7 @@ class OTBlock(nn.Module):
                     print('Successfully loaded OT model ' + ot_model_load_path)
 
         # print('Generating features with OT solver...')
-        self.compute_ot(self.feature_save_path, self.selected_ot_model_path, self.gen_feature_path, mode='generate',max_gen_samples=self.max_gen_samples)
+        self.compute_ot(self.feature_save_path, self.selected_ot_model_path, self.gen_feature_path, mode='generate')
         if torch.cuda.is_available():
             torch.cuda.empty_cache() 
         
@@ -395,7 +408,7 @@ class OTBlock(nn.Module):
 
             
     def forward(self, x):
-        z = self.process_feature(x)[:x.shape[0]]
+        z = self.process_feature(x).type_as(x)
         z = x + (z - x).detach()
         return z
 

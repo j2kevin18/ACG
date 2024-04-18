@@ -33,6 +33,7 @@ class ACG(nn.Module):
         self.decoder_ae1 = Block(8, 32, 3, 1)
         self.decoder_ae2 = Block(32, 182, 3, 1)
         self.decoder_ae3 = Block(182, 728, 3, 1)
+        self.encoder.fc.requires_grad_(False)
 
 
         self.decoder1 = nn.Sequential(
