@@ -169,8 +169,8 @@ class pyOMT_raw():
             torch.abs(self.d_g, out=self.d_g)
             g_ratio = torch.max(self.d_g)*self.num_P
             
-            print('[{0}/{1}] Max absolute error ratio: {2:.3f}. g norm: {3:.6f}. num zero: {4:d}'.format(
-                steps, self.max_iter, g_ratio, g_norm, num_zero))
+            # print('[{0}/{1}] Max absolute error ratio: {2:.3f}. g norm: {3:.6f}. num zero: {4:d}'.format(
+            #     steps, self.max_iter, g_ratio, g_norm, num_zero))
 
             if g_norm < 2e-3:
                 # torch.save(self.d_h, './h_final.pt')
@@ -180,9 +180,9 @@ class pyOMT_raw():
             adam_m_id, m_file = load_last_file(self.result_root_path+'/adam_m', '.pt')
             adam_v_id, v_file = load_last_file(self.result_root_path+'/adam_v', '.pt')
             h_tmp, m_tmp, v_tmp = torch.load(h_file), torch.load(m_file), torch.load(v_file)
-            h_tmp[self.d_h.shape[0], :] = self.d_h
-            m_tmp[self.d_adam_m.shape[0], :] = self.d_adam_m
-            v_tmp[self.d_adam_v.shape[0], :] = self.d_adam_v
+            h_tmp[:self.d_h.shape[0]] = self.d_h
+            m_tmp[:self.d_adam_m.shape[0]] = self.d_adam_m
+            v_tmp[:self.d_adam_v.shape[0]] = self.d_adam_v
             torch.save(h_tmp, self.result_root_path+'/h/{}.pt'.format(steps+last_step))
             torch.save(m_tmp, self.result_root_path+'/adam_m/{}.pt'.format(steps+last_step))
             torch.save(v_tmp, self.result_root_path+'/adam_v/{}.pt'.format(steps+last_step))
@@ -215,13 +215,14 @@ class pyOMT_raw():
 
 
     def set_h(self, h_tensor):
-        self.d_h[h_tensor.shape[0],:].copy_(h_tensor)
+        # print(self.d_h.shape, h_tensor.shape)
+        self.d_h.copy_(h_tensor[:self.d_h.shape[0]])
 
     def set_adam_m(self, adam_m_tensor):
-        self.d_adam_m[adam_m_tensor.shape[0],:].copy_(adam_m_tensor)
+        self.d_adam_m.copy_(adam_m_tensor[:self.d_adam_m.shape[0]])
 
     def set_adam_v(self, adam_v_tensor):
-        self.d_adam_v[adam_v_tensor.shape[0],:].copy_(adam_v_tensor)
+        self.d_adam_v.copy_(adam_v_tensor[:self.d_adam_v.shape[0]])
         
     def train_omt(self, num_bat=1):
         last_step = 0
@@ -294,17 +295,17 @@ class pyOMT_raw():
         '''generate new features'''
         # rand_w = torch.rand([numGen,1])    
         rand_w = dissim * torch.ones([numGen,1]).to(device)
-        P_gen = (torch.mul(P[I_gen[0,:],:], 1 - rand_w) + torch.mul(P[I_gen[1,:],:], rand_w)).cpu().numpy()
+        P_gen = torch.mul(P[I_gen[0,:],:], 1 - rand_w) + torch.mul(P[I_gen[1,:],:], rand_w)
 
 
         if P_gen.shape[0] > 0:
-            P.cpu().numpy()[I_gen[0,:],:] = P_gen
+            P.cpu().numpy()[I_gen[0,:],:] = P_gen.cpu().numpy()
             
 
         id_gen = I_gen[0,:].squeeze().cpu().numpy().astype(int)
         # print(f"P_gen:{P_gen.shape}, I_gen:{I_gen.shape}, P:{P.shape}, theta:{theta}")
 
-        sio.savemat(output_P_gen, {'features':P, 'ids':id_gen})
+        sio.savemat(output_P_gen, {'features':P.cpu().numpy(), 'ids':id_gen})
         
 
     
@@ -441,6 +442,6 @@ def load_last_file(path, file_ext):
         return None, None
     else:
         last_f_id, last_f = max(file_ids, key=lambda item:item[0])
-        print('Last' + path + ': ', last_f_id)
+        # print('Last' + path + ': ', last_f_id)
         return last_f_id, last_f
 
