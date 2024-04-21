@@ -2,8 +2,8 @@ train_cfg:
   root: "Celeb-DF-v2-imgface"
   split: "train"
   balance: True
-  log_steps: 1000
-  val_steps: 1000
+  log_steps: 100
+  val_steps: 100
   num_steps: 92000
   transforms:
     - name: "Resize"

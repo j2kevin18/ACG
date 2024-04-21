@@ -193,7 +193,7 @@ class pyOMT_raw():
             h_file_list.append(self.result_root_path+'/h/{}.pt'.format(steps+last_step))
             m_file_list.append(self.result_root_path+'/adam_m/{}.pt'.format(steps+last_step))
             v_file_list.append(self.result_root_path+'/adam_v/{}.pt'.format(steps+last_step))
-            if len(h_file_list)>5:
+            if len(h_file_list)>1:
                 if os.path.exists(h_file_list[0]):
                     os.remove(h_file_list[0])
                 h_file_list.pop(0)
@@ -203,6 +203,7 @@ class pyOMT_raw():
                 if os.path.exists(m_file_list[0]):
                     os.remove(m_file_list[0])
                 m_file_list.pop(0)
+
 
             if g_norm <= curr_best_g_norm:
                 curr_best_g_norm = g_norm
