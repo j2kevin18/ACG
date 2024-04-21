@@ -176,13 +176,17 @@ class pyOMT_raw():
                 # torch.save(self.d_h, './h_final.pt')
                 return
 
+
             h_id, h_file = load_last_file(self.result_root_path+'/h', '.pt')
             adam_m_id, m_file = load_last_file(self.result_root_path+'/adam_m', '.pt')
             adam_v_id, v_file = load_last_file(self.result_root_path+'/adam_v', '.pt')
-            h_tmp, m_tmp, v_tmp = torch.load(h_file), torch.load(m_file), torch.load(v_file)
-            h_tmp[:self.d_h.shape[0]] = self.d_h
-            m_tmp[:self.d_adam_m.shape[0]] = self.d_adam_m
-            v_tmp[:self.d_adam_v.shape[0]] = self.d_adam_v
+            if h_file != None and m_file != None and v_file != None:
+                h_tmp, m_tmp, v_tmp = torch.load(h_file), torch.load(m_file), torch.load(v_file)
+                h_tmp[:self.d_h.shape[0]] = self.d_h
+                m_tmp[:self.d_adam_m.shape[0]] = self.d_adam_m
+                v_tmp[:self.d_adam_v.shape[0]] = self.d_adam_v
+            else:
+                h_tmp, m_tmp, v_tmp = self.d_h, self.d_adam_m, self.d_adam_v
             torch.save(h_tmp, self.result_root_path+'/h/{}.pt'.format(steps+last_step))
             torch.save(m_tmp, self.result_root_path+'/adam_m/{}.pt'.format(steps+last_step))
             torch.save(v_tmp, self.result_root_path+'/adam_v/{}.pt'.format(steps+last_step))
