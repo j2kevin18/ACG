@@ -63,7 +63,6 @@ class ExpMultiGpuTrainer(AbstractTrainer):
             options = yaml.load(f, Loader=yaml.FullLoader)
         train_options = options[branch]
         self.train_set = load_dataset(name)(train_options)
-        self.is_pretrain = config_cfg["is_pretrain"]
         self.pretrain_path = config_cfg["pretrain_path"]
         # define training sampler
         self.train_sampler = data.distributed.DistributedSampler(self.train_set)
@@ -120,8 +119,8 @@ class ExpMultiGpuTrainer(AbstractTrainer):
         self.num_classes = model_cfg["num_classes"]
         self.device = "cuda:" + str(self.local_rank)
         self.model = load_model(self.model_name)(**model_cfg) 
-        if self.is_pretrain:
-            self._load_ckpt(best=True, train=True)
+        if self.pretrain_path != None:
+            self._load_ckpt(best=False, train=True)
         self.model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self.model).to(self.device)
         self._mprint(f"Using SyncBatchNorm.")
         self.model = torch.nn.parallel.DistributedDataParallel(
