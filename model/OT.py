@@ -304,7 +304,7 @@ class pyOMT_raw():
 
 
         if P_gen.shape[0] > 0:
-            P.cpu().numpy()[I_gen[0,:],:] = P_gen.cpu().numpy()
+            P.cpu().numpy()[I_gen.cpu().numpy()[0,:],:] = P_gen.cpu().numpy()
             
 
         id_gen = I_gen[0,:].squeeze().cpu().numpy().astype(int)
@@ -317,7 +317,7 @@ class pyOMT_raw():
         
 class OTBlock(nn.Module):
     def __init__(self, result_root_path="./ot_result",
-                 max_iter=400, ot_lr=5e-2, topk=20, angle_threshold=0.7, rec_gen_distance=0.75,
+                 max_iter=400, ot_lr=5e-2, topk=20, angle_threshold=1.4, rec_gen_distance=0.75,
                  num_gen_x_bat=3,
                 #  max_gen_samples=32
                  ):

@@ -163,9 +163,10 @@ class ExpMultiGpuTrainer(AbstractTrainer):
         raise NotImplementedError("The function is not intended to be used here.")
 
     def _load_ckpt(self, best=False, train=False):
-        save_dir = self.pretrain_path if best else os.path.join(self.dir, "latest_model.bin")
+        save_dir = self.pretrain_path if not best else os.path.join(self.dir, "latest_model.bin")
         weights = torch.load(save_dir, map_location="cpu")["model"]
         self.model.load_state_dict(weights)
+        print("Successfully load model parameters.")
         if not train: 
             freeze_weights(self.model)
 

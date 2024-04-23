@@ -13,9 +13,6 @@ def arg_parser():
     parser.add_argument("--local_rank", default=0,
                         type=int,
                         help="Specified the node rank for distributed training.")
-    # parser.add_argument("--is_pretrain", 
-    #                     action="store_true",
-    #                     help="Specified the pretrain model path.")
     parser.add_argument("--pretrain_path", 
                         type=str,
                         help="Specified the pretrain model path.")
