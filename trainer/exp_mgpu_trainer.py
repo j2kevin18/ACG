@@ -24,6 +24,7 @@ from scheduler import get_scheduler
 from trainer import AbstractTrainer, LEGAL_METRIC
 from trainer.utils import exp_recons_loss, MLLoss, reduce_tensor, center_print
 from trainer.utils import MODELS_PATH, AccMeter, AUCMeter, AverageMeter, Logger, Timer
+from model.common import freeze_weights
 
 
 class ExpMultiGpuTrainer(AbstractTrainer):
@@ -62,6 +63,7 @@ class ExpMultiGpuTrainer(AbstractTrainer):
             options = yaml.load(f, Loader=yaml.FullLoader)
         train_options = options[branch]
         self.train_set = load_dataset(name)(train_options)
+        self.pretrain = config_cfg["pretrain"]
         # define training sampler
         self.train_sampler = data.distributed.DistributedSampler(self.train_set)
         # wrapped with data loader
@@ -116,7 +118,9 @@ class ExpMultiGpuTrainer(AbstractTrainer):
         # load model
         self.num_classes = model_cfg["num_classes"]
         self.device = "cuda:" + str(self.local_rank)
-        self.model = load_model(self.model_name)(**model_cfg)
+        self.model = load_model(self.model_name)(**model_cfg) 
+        if self.pretrain:
+            self._load_ckpt(best=True, train=True)
         self.model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self.model).to(self.device)
         self._mprint(f"Using SyncBatchNorm.")
         self.model = torch.nn.parallel.DistributedDataParallel(
@@ -159,8 +163,11 @@ class ExpMultiGpuTrainer(AbstractTrainer):
         raise NotImplementedError("The function is not intended to be used here.")
 
     def _load_ckpt(self, best=False, train=False):
-        # Not used.
-        raise NotImplementedError("The function is not intended to be used here.")
+        save_dir = self.pretrain if best else os.path.join(self.dir, "latest_model.bin")
+        weights = torch.load(save_dir, map_location="cpu")["model"]
+        self.model.load_state_dict(weights)
+        if not train: 
+            freeze_weights(self.model)
 
     def _save_ckpt(self, step, best=False):
         save_dir = os.path.join(self.dir, f"best_model_{step}.bin" if best else "latest_model.bin")

@@ -13,6 +13,10 @@ def arg_parser():
     parser.add_argument("--local_rank", default=0,
                         type=int,
                         help="Specified the node rank for distributed training.")
+    parser.add_argument("--pretrain", 
+                        type=bool,
+                        default=True,
+                        help="Specified the pretrain model path.")
     return parser.parse_args()
 
 
@@ -28,6 +32,7 @@ if __name__ == '__main__':
     with open(config) as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
     config["config"]["local_rank"] = arg.local_rank
+    config["config"]["pretrain"] = arg.pretrain
 
     trainer = ExpMultiGpuTrainer(config, stage="Train")
     trainer.train()

@@ -182,9 +182,9 @@ class pyOMT_raw():
             adam_v_id, v_file = load_last_file(self.result_root_path+'/adam_v', '.pt')
             if h_file != None and m_file != None and v_file != None:
                 h_tmp, m_tmp, v_tmp = torch.load(h_file), torch.load(m_file), torch.load(v_file)
-                h_tmp[:self.d_h.shape[0]] = self.d_h
-                m_tmp[:self.d_adam_m.shape[0]] = self.d_adam_m
-                v_tmp[:self.d_adam_v.shape[0]] = self.d_adam_v
+                h_tmp[:self.d_h.shape[0]] = self.d_h[:h_tmp.shape[0]]
+                m_tmp[:self.d_adam_m.shape[0]] = self.d_adam_m[:m_tmp.shape[0]]
+                v_tmp[:self.d_adam_v.shape[0]] = self.d_adam_v[:v_tmp.shape[0]]
             else:
                 h_tmp, m_tmp, v_tmp = self.d_h, self.d_adam_m, self.d_adam_v
             torch.save(h_tmp, self.result_root_path+'/h/{}.pt'.format(steps+last_step))
@@ -221,13 +221,13 @@ class pyOMT_raw():
 
     def set_h(self, h_tensor):
         # print(self.d_h.shape, h_tensor.shape)
-        self.d_h.copy_(h_tensor[:self.d_h.shape[0]])
+        self.d_h[:h_tensor.shape[0]].copy_(h_tensor[:self.d_h.shape[0]])
 
     def set_adam_m(self, adam_m_tensor):
-        self.d_adam_m.copy_(adam_m_tensor[:self.d_adam_m.shape[0]])
+        self.d_adam_m[:adam_m_tensor.shape[0]].copy_(adam_m_tensor[:self.d_adam_m.shape[0]])
 
     def set_adam_v(self, adam_v_tensor):
-        self.d_adam_v.copy_(adam_v_tensor[:self.d_adam_v.shape[0]])
+        self.d_adam_v[:adam_v_tensor.shape[0]].copy_(adam_v_tensor[:self.d_adam_v.shape[0]])
         
     def train_omt(self, num_bat=1):
         last_step = 0
