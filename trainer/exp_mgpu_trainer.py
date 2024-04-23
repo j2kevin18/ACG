@@ -63,7 +63,8 @@ class ExpMultiGpuTrainer(AbstractTrainer):
             options = yaml.load(f, Loader=yaml.FullLoader)
         train_options = options[branch]
         self.train_set = load_dataset(name)(train_options)
-        self.pretrain = config_cfg["pretrain"]
+        self.is_pretrain = config_cfg["is_pretrain"]
+        self.pretrain_path = config_cfg["pretrain_path"]
         # define training sampler
         self.train_sampler = data.distributed.DistributedSampler(self.train_set)
         # wrapped with data loader
@@ -119,7 +120,7 @@ class ExpMultiGpuTrainer(AbstractTrainer):
         self.num_classes = model_cfg["num_classes"]
         self.device = "cuda:" + str(self.local_rank)
         self.model = load_model(self.model_name)(**model_cfg) 
-        if self.pretrain:
+        if self.is_pretrain:
             self._load_ckpt(best=True, train=True)
         self.model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self.model).to(self.device)
         self._mprint(f"Using SyncBatchNorm.")
@@ -163,7 +164,7 @@ class ExpMultiGpuTrainer(AbstractTrainer):
         raise NotImplementedError("The function is not intended to be used here.")
 
     def _load_ckpt(self, best=False, train=False):
-        save_dir = self.pretrain if best else os.path.join(self.dir, "latest_model.bin")
+        save_dir = self.pretrain_path if best else os.path.join(self.dir, "latest_model.bin")
         weights = torch.load(save_dir, map_location="cpu")["model"]
         self.model.load_state_dict(weights)
         if not train: 
