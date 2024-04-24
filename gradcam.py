@@ -9,7 +9,7 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 from torchvision.models.resnet import resnet18
 from model import load_model
-from utils.checkpoint import load_checkpoint
+# from utils.checkpoint import load_checkpoint
 import argparse
 
 
@@ -18,17 +18,16 @@ class GradCAM:
     def __init__(
         self,
         model: nn.Module,
-        target_layer: str,
+        # target_layer: str,
         size=(224, 224),
-        num_cls=1000,
+        num_cls=1,
         mean=None,
         std=None,
     ) -> None:
         self.model = model
         self.model.eval()
-
-        getattr(self.model, target_layer).register_forward_hook(self.__forward_hook)
-        getattr(self.model, target_layer).register_backward_hook(self.__backward_hook)
+        self.model.encoder.conv4.register_forward_hook(self.__forward_hook)
+        self.model.encoder.conv4.register_full_backward_hook(self.__backward_hook)
 
         self.size = size
         self.origin_size = None
@@ -44,15 +43,15 @@ class GradCAM:
     def forward(self, img_arr: np.ndarray, label=None, show=True, write=False, path=''):
         img_input = self.__img_preprocess(img_arr.copy())
 
-        output = self.model({"img": img_input})
-        output = output["logits"]
+        output = self.model(img_input)
+        
+
         idx = np.argmax(output.cpu().data.numpy())
 
         self.model.zero_grad()
         loss = self.__compute_loss(output, label)
 
         loss.backward()
-
         grads_val = self.grads[0].cpu().data.numpy().squeeze()
         fmap = self.fmaps[0].cpu().data.numpy().squeeze()
         cam = self.__compute_cam(fmap, grads_val)
@@ -84,6 +83,7 @@ class GradCAM:
         return img_tensor
 
     def __backward_hook(self, module, grad_in, grad_out):
+        # print(grad_out)
         self.grads.append(grad_out[0].detach())
 
     def __forward_hook(self, module, input, output):
@@ -104,6 +104,7 @@ class GradCAM:
 
     def __compute_cam(self, feature_map, grads):
         cam = np.zeros(feature_map.shape[1:], dtype=np.float32)
+        # print(grads.shape)
         alpha = np.mean(grads, axis=(1, 2))  
         for k, ak in enumerate(alpha):
             cam += ak * feature_map[k]
@@ -133,18 +134,19 @@ if __name__== "__main__":
     parser.add_argument('--pth', type=str)
     parser.add_argument('--layer', type=str)
     parser.add_argument('--img', type=str)
+    parser.add_argument('--save_path', type=str)
     args = parser.parse_args()
-    cfg = {"PRETRAINED": False, "ESCAPE": ""}
-    net = getattr(load_model(args.model))(cfg)
-    state_dic = torch.load(args.pth)
-    print("keys in your model:", state_dic["model_state"].keys())
-    load_checkpoint(args.pth, net, False)
+    cfg = {"num_classes": 1, }
+    net = load_model(args.model)(**cfg)
+    state_dic = torch.load(args.pth, map_location='cpu')
+    # print("keys in your model:", state_dic["model_state"].keys())
+    # load_checkpoint(args.pth, net, False)
     
     img = cv2.imread(args.img, 1)
     grad_cam = GradCAM(
         net,
         num_cls=2,
-        target_layer=args.layer,
+        # target_layer=args.layer,
         size=(299, 299),
         mean=[0.485, 0.456, 0.406],
         std=[0.229, 0.224, 0.225],

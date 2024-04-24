@@ -181,7 +181,7 @@ class pyOMT_raw():
             adam_m_id, m_file = load_last_file(self.result_root_path+'/adam_m', '.pt')
             adam_v_id, v_file = load_last_file(self.result_root_path+'/adam_v', '.pt')
             if h_file != None and m_file != None and v_file != None:
-                h_tmp, m_tmp, v_tmp = torch.load(h_file), torch.load(m_file), torch.load(v_file)
+                h_tmp, m_tmp, v_tmp = torch.load(h_file, map_location="cpu"), torch.load(m_file, map_location="cpu"), torch.load(v_file, map_location="cpu")
                 h_tmp[:self.d_h.shape[0]] = self.d_h[:h_tmp.shape[0]]
                 m_tmp[:self.d_adam_m.shape[0]] = self.d_adam_m[:m_tmp.shape[0]]
                 v_tmp[:self.d_adam_v.shape[0]] = self.d_adam_v[:v_tmp.shape[0]]
@@ -240,9 +240,9 @@ class pyOMT_raw():
                 sys.exit('Error: h, adam_m, adam_v file log does not match')
             elif h_id != None and adam_m_id != None and adam_v_id != None:
                 last_step = h_id
-                self.set_h(torch.load(h_file))
-                self.set_adam_m(torch.load(m_file))
-                self.set_adam_v(torch.load(v_file))
+                self.set_h(torch.load(h_file, map_location="cpu"))
+                self.set_adam_m(torch.load(m_file, map_location="cpu"))
+                self.set_adam_v(torch.load(v_file, map_location="cpu"))
 
         '''run gradient descent'''
         self.run_gd(last_step=last_step, num_bat=num_bat)
@@ -317,7 +317,7 @@ class pyOMT_raw():
         
 class OTBlock(nn.Module):
     def __init__(self, result_root_path="./ot_result",
-                 max_iter=400, ot_lr=5e-2, topk=20, angle_threshold=1.4, rec_gen_distance=0.75,
+                 max_iter=400, ot_lr=5e-2, topk=3, angle_threshold=1.4, rec_gen_distance=0.75,
                  num_gen_x_bat=3,
                 #  max_gen_samples=32
                  ):
@@ -371,7 +371,7 @@ class OTBlock(nn.Module):
             p_s.train_omt(bat_size_P)
             torch.save(p_s.d_h, output_h)
         else:
-            p_s.set_h(torch.load(output_h))
+            p_s.set_h(torch.load(output_h, map_location='cpu'))
 
         if GENERATE:
             '''generate new samples'''
@@ -405,7 +405,7 @@ class OTBlock(nn.Module):
         
         feature_dict = sio.loadmat(self.gen_feature_path)
         features = feature_dict['features']
-        num_feature = features.shape[0]
+        num_feature = feature_shape[0]
             
         z = torch.from_numpy(features).to(device)
         z = z.view(num_feature, feature_shape[1], feature_shape[2], feature_shape[3])
