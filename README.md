@@ -60,6 +60,19 @@ python inference.py --bin path/to/model.bin --image_folder path/to/image_folder 
     ```
 - Type `python inference.py -h` in your console for more information about available arguments.
 
+### Gradcam
+- I provide the script in `gradcam.py` to help you do visualization using custom data. 
+- To do this, run the following script in your console.
+```{bash}
+python gradcam.py --model ACG --pth path/to/model.bin --img demo.jpg --save_path save.jpg
+```
+optional arguments:
+```
+  -h, --help            show this help message and exit
+  --model,  model name, should be exactly same with the file name in /model
+  --img,     facial image path
+  --save_path,      save activation map path
+```
 
 ### Acknowledgement
 - I thank prof. Feng Ding for providing the infrastructure and some instructions for me to design this model.
