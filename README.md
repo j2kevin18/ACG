@@ -2,7 +2,7 @@
 
 ### Introduction
 
-This repository is an implementation for *Face Detection of Image Semantic Disentangle Technology* presented in my graudate thesis. In the paper, I propose a novel **A**utoencoder-**C**lassification **G**eometric framework called **ACG** to detect face forgeries. The code is based on Pytorch. Please follow the instructions below to get started.
+This repository is an implementation for *Face Detection of Image Semantic Disentangle Technology* presented in my graudate thesis. In the paper, I propose a novel **A**utoencoder-**C**lassification **G**eometric framework called **ACG** to detect face forgeries. The code is based on Pytorch. Please follow the instructions below to get started. 
 
 
 ### Motivation
@@ -34,7 +34,8 @@ Please ensure that you have already installed the following packages.
 CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --nproc_per_node=1 --master_port 12345 train.py --config path/to/config.yml --pretrain_path path/to/pretrain.bin
 ```
 - `--config`: Specify the path of the config file. 
-- `--pretrain`: Specify the path of pretrained model.
+- `--pretrain`: Specify the path of pretrained model. If you ask for pretrained model, please click [this](https://pan.baidu.com/s/1xxXiiBIslUuvj2oQMSFCzQ?pwd=acgn 
+), extract code: **acgn**.
 
 ### Testing
 - To test a model, run the following script in your console. 
