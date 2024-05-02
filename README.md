@@ -21,7 +21,7 @@ Please ensure that you have already installed the following packages.
 - [PyYaml](https://pypi.org/project/PyYAML/#history) 5.3.1
 
 ### Dataset Preparation
-- I include the dataset loaders for several commonly-used face forgery datasets, *i.e.,* [FaceForensics++](https://github.com/ondyari/FaceForensics), [Celeb-DF](https://www.cs.albany.edu/~lsw/celeb-deepfakeforensics.html), [WildDeepfake](https://github.com/deepfakeinthewild/deepfake-in-the-wild), and [DFDC](https://ai.facebook.com/datasets/dfdc). You can enter the dataset website to download the original data.
+- I include the dataset loaders for several commonly-used face forgery datasets, *i.e.,*[Celeb-DF](https://www.cs.albany.edu/~lsw/celeb-deepfakeforensics.html), [WildDeepfake](https://github.com/deepfakeinthewild/deepfake-in-the-wild). You can enter the dataset website to download the original data.
 - For FaceForensics++, Celeb-DF, and DFDC, since the original data are in video format, you should first extract the facial images from the sequences and store them. We use [RetinaFace](https://pypi.org/project/retinaface-pytorch/) to do this.
 
 ### Config Files
