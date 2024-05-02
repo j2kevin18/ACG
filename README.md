@@ -73,6 +73,15 @@ optional arguments:
   --img,     facial image path
   --save_path,      save activation map path
 ```
+result demo
+
+Origin Image:
+
+![](test_photo/test_img.jpg)
+
+Activation Map:
+
+![](test_photo/test_img_gradcam.jpg)
 
 ### Acknowledgement
 - I thank prof. Feng Ding for providing the infrastructure and some instructions for me to design this model.

@@ -1,4 +1,5 @@
 import torch
+import pickle
 import numpy as np
 from os.path import join
 from dataset import AbstractDataset
@@ -33,12 +34,15 @@ class WildDeepfake(AbstractDataset):
             num = self.num_test
         else:
             num = None
-        real_images = torch.load(join(self.root, self.split, "real.pickle"))
+        with open(join(self.root, self.split, "real.pickle"), 'rb') as f:
+            real_images = pickle.load(f)
         if num is not None:
             real_images = np.random.choice(real_images, num // 3, replace=False)
         real_tgts = [torch.tensor(0)] * len(real_images)
         print(f"real: {len(real_tgts)}")
-        fake_images = torch.load(join(self.root, self.split, "fake.pickle"))
+        
+        with open(join(self.root, self.split, "fake.pickle"), 'rb') as f:
+            fake_images = pickle.load(f)
         if num is not None:
             fake_images = np.random.choice(fake_images, num - num // 3, replace=False)
         fake_tgts = [torch.tensor(1)] * len(fake_images)

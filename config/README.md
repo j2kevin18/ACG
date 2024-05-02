@@ -32,8 +32,8 @@ data:
   train_batch_size: 32
   val_batch_size: 64
   test_batch_size: 64
-  name: FaceForensics
-  file: "./config/dataset/faceforensics.yml"  # config file for a dataset
+  name: Celeb-DF
+  file: "./config/dataset/celeb-df.yml"  # config file for a dataset
   train_branch: "train_cfg"
   val_branch: "test_cfg"
   test_branch: "test_cfg"
