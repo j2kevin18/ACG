@@ -73,7 +73,7 @@ optional arguments:
   --img,     facial image path
   --save_path,      save activation map path
 ```
-result demo
+#Result Demo
 
 Origin Image:
 
